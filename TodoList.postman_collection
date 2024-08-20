@@ -1,0 +1,113 @@
+{
+	"info": {
+		"_postman_id": "223f6a79-4fd2-4360-a983-64b06282ab42",
+		"name": "Azure Latihan",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "14622550"
+	},
+	"item": [
+		{
+			"name": "Update",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "Test3",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:7008/api/todos/update/Test2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7008",
+					"path": [
+						"api",
+						"todos",
+						"update",
+						"Test2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:7008/api/todos/delete/Test2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7008",
+					"path": [
+						"api",
+						"todos",
+						"delete",
+						"Test2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "Test1",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:7008/api/todos/add",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7008",
+					"path": [
+						"api",
+						"todos",
+						"add"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:7008/api/todos",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7008",
+					"path": [
+						"api",
+						"todos"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
