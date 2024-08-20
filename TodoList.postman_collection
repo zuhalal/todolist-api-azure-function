@@ -21,7 +21,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:7008/api/todos/update/Test2",
+					"raw": "http://localhost:7008/api/todos/update/Test1",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -31,7 +31,7 @@
 						"api",
 						"todos",
 						"update",
-						"Test2"
+						"Test1"
 					]
 				}
 			},
