@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
-using System.Collections;
 using Newtonsoft.Json;
 using FunctionTodoList.Model;
 using Microsoft.Azure.Cosmos.Linq;
@@ -44,26 +43,45 @@ namespace FunctionTodoList
             {
                 return new BadRequestObjectResult(ex.Message);
             }
+            catch (Exception ex)
+            {
+                _logger.LogError("An error occurred: " + ex.ToString());
+
+                var result = new ObjectResult("An internal server error occurred.");
+                result.StatusCode = StatusCodes.Status500InternalServerError;
+                return result;
+            }
         }
 
         [Function("GetTodoList")]
         public async Task<IActionResult> RunGet([HttpTrigger(AuthorizationLevel.Function, "get", Route = "todos")] HttpRequest req)
         {
-            _logger.LogInformation("ToDo List HTTP trigger function processed a get request.");
-
-            List<TodoItem> todoItems = new List<TodoItem>();
-
-            var linqQueryable = cosmosContainer.GetItemLinqQueryable<TodoItem>();
-            var iterator = linqQueryable.ToFeedIterator();
-
-            while (iterator.HasMoreResults)
+            try
             {
-                foreach (var item in await iterator.ReadNextAsync())
+                _logger.LogInformation("ToDo List HTTP trigger function processed a get request.");
+
+                List<TodoItem> todoItems = new List<TodoItem>();
+
+                var linqQueryable = cosmosContainer.GetItemLinqQueryable<TodoItem>();
+                var iterator = linqQueryable.ToFeedIterator();
+
+                while (iterator.HasMoreResults)
                 {
-                     todoItems.Add(item);
+                    foreach (var item in await iterator.ReadNextAsync())
+                    {
+                        todoItems.Add(item);
+                    }
                 }
+                return new OkObjectResult(todoItems);
             }
-            return new OkObjectResult(todoItems);
+            catch (Exception ex)
+            {
+                _logger.LogError("An error occurred: " + ex.ToString());
+
+                var result = new ObjectResult("An internal server error occurred.");
+                result.StatusCode = StatusCodes.Status500InternalServerError;
+                return result;
+            }
         }
 
         [Function("GetSpecificTodoList")]
@@ -96,7 +114,11 @@ namespace FunctionTodoList
                 return new BadRequestObjectResult(ex.Message);
             } catch (Exception ex)
             {
-                return new BadRequestObjectResult(ex.Message);
+                _logger.LogError("An error occurred: " + ex.ToString());
+
+                var result = new ObjectResult("An internal server error occurred.");
+                result.StatusCode = StatusCodes.Status500InternalServerError;
+                return result;
             }
         }
 
@@ -125,6 +147,14 @@ namespace FunctionTodoList
             {
                 return new NotFoundResult();
             }
+            catch (Exception ex)
+            {
+                _logger.LogError("An error occurred: " + ex.ToString());
+
+                var result = new ObjectResult("An internal server error occurred.");
+                result.StatusCode = StatusCodes.Status500InternalServerError;
+                return result;
+            }
         }
 
         [Function("DeleteTodoList")]
@@ -146,6 +176,14 @@ namespace FunctionTodoList
             catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 return new NotFoundResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("An error occurred: " + ex.ToString());
+
+                var result = new ObjectResult("An internal server error occurred.");
+                result.StatusCode = StatusCodes.Status500InternalServerError;
+                return result;
             }
         }
     }
