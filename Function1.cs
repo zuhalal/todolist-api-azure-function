@@ -187,7 +187,7 @@ namespace FunctionTodoList
                     await _eventHubProducerClient.SendAsync(eventBatch);
                 }
 
-                //await SendDataToEventGrid(todoItemData, "Update/*");
+                //await SendDataToEventGrid(itemToUpdate, "Update/*");
 
 
                 return new OkObjectResult($"Item updated successfully: {updateResponse.Resource.Id}");

@@ -38,7 +38,10 @@ namespace FunctionTodoList
 
                     var itemToUpdate = cosmosContainer.GetItemLinqQueryable<Reminder>(true).Where(p => p.TodoListId.Equals(todoItemData.Id)).AsEnumerable().FirstOrDefault(); Console.WriteLine("Masook");
                     if (itemToUpdate != null) {
-                        itemToUpdate.Message = todoItemData.Title ?? itemToUpdate.Message;
+                        if (todoItemData.Title != null)
+                        {
+                            itemToUpdate.Message = todoItemData.Title ?? itemToUpdate.Message;
+                        }
                         itemToUpdate.UpdatedAt = DateTime.Now;
                         itemToUpdate.IsCompleted = todoItemData.IsCompleted;
                         ItemResponse<Reminder> updateResponse = await cosmosContainer.ReplaceItemAsync<Reminder>(itemToUpdate, itemToUpdate.Id, new PartitionKey(itemToUpdate.Id));

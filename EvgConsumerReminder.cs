@@ -57,7 +57,11 @@ namespace FunctionTodoList
             {
                 try
                 {
-                    currentData.IsCompleted = todoItemData.IsCompleted ? todoItemData.IsCompleted : currentData.IsCompleted;
+                    currentData.IsCompleted = todoItemData.IsCompleted;
+                    if (todoItemData.Title != null)
+                    {
+                        currentData.Message = todoItemData.Title;
+                    }
                     ItemResponse<Reminder> updateResponse = await cosmosContainer.ReplaceItemAsync<Reminder>(currentData, currentData.Id, new PartitionKey(currentData.Id));
                 }
                 catch (Exception ex) {
