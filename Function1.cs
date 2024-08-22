@@ -6,6 +6,11 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using FunctionTodoList.Model;
 using Microsoft.Azure.Cosmos.Linq;
+using Azure.Messaging.EventHubs.Producer;
+using System.Text;
+using Azure.Messaging.EventHubs;
+using Microsoft.Azure.EventGrid.Models;
+using Microsoft.Azure.EventGrid;
 
 namespace FunctionTodoList
 {
@@ -15,17 +20,28 @@ namespace FunctionTodoList
         private static string CONNECTION_STRING = Environment.GetEnvironmentVariable("CosmosDbConnection") ?? "";
         private static string _DATABASE = "ToDoList";
         private static string _CONTAINER = "ToDoItem";
+        private static string ENDPOINT = Environment.GetEnvironmentVariable("EventGridEndpoint") ?? "";
+        private static string KEY = Environment.GetEnvironmentVariable("EventGridKey") ?? "";
+
 
         private static CosmosClient client = new CosmosClient(CONNECTION_STRING);
         private Container cosmosContainer = client.GetDatabase(_DATABASE).GetContainer(_CONTAINER);
-        
+        private readonly EventHubProducerClient _eventHubProducerClient;
+
         public Function1(ILogger<Function1> logger)
         {
             _logger = logger;
+            string connectionString = Environment.GetEnvironmentVariable("Evh-pdpzuhal-send");
+            string eventHubName = "reminder";
+            _eventHubProducerClient = new EventHubProducerClient(connectionString, eventHubName);
         }
 
         [Function("AddTodoList")]
-        public async Task<IActionResult> RunAdd([HttpTrigger(AuthorizationLevel.Function, "post", Route = "todos/add")] HttpRequest req)
+        public async Task<IActionResult> RunAdd(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "todos/add")] HttpRequest req, 
+            //[EventHub("reminder", Connection = "Evh-pdpzuhal-send")] IAsyncCollector<string> evenhub, 
+            ILogger log
+            )
         {
            try
             {
@@ -38,6 +54,23 @@ namespace FunctionTodoList
                 todoItemData.IsCompleted = false;
 
                 var todoItem = await cosmosContainer.CreateItemAsync(todoItemData);
+                var finalJson = JsonConvert.SerializeObject(todoItemData);
+                //await evenhub.AddAsync(finalJson);
+
+                EventData eventData = new EventData(Encoding.UTF8.GetBytes(finalJson));
+
+                using (EventDataBatch eventBatch = await _eventHubProducerClient.CreateBatchAsync())
+                {
+                    if (!eventBatch.TryAdd(eventData))
+                    {
+                        throw new Exception($"Event is too large for the batch and cannot be sent.");
+                    }
+
+                    await _eventHubProducerClient.SendAsync(eventBatch);
+                }
+
+                //await SendDataToEventGrid(todoItemData, "Create/*");
+
                 return new OkObjectResult("Todo List Added: " + todoItem.Resource.ToString());
             } catch (CosmosException ex)
             {
@@ -136,10 +169,26 @@ namespace FunctionTodoList
                 var itemToUpdate = findResponse.Resource;
 
                 itemToUpdate.Title = todoItemData.Title;
-                itemToUpdate.IsCompleted = todoItemData.IsCompleted ? todoItemData.IsCompleted : false;
+                itemToUpdate.IsCompleted = todoItemData.IsCompleted;
                 itemToUpdate.UpdatedAt = DateTime.Now;
                 
                 ItemResponse<TodoItem> updateResponse = await cosmosContainer.ReplaceItemAsync<TodoItem>(itemToUpdate, id, new PartitionKey(id));
+
+                var finalJson = JsonConvert.SerializeObject(itemToUpdate);
+                EventData eventData = new EventData(Encoding.UTF8.GetBytes(finalJson));
+
+                using (EventDataBatch eventBatch = await _eventHubProducerClient.CreateBatchAsync())
+                {
+                    if (!eventBatch.TryAdd(eventData))
+                    {
+                        throw new Exception($"Event is too large for the batch and cannot be sent.");
+                    }
+
+                    await _eventHubProducerClient.SendAsync(eventBatch);
+                }
+
+                //await SendDataToEventGrid(todoItemData, "Update/*");
+
 
                 return new OkObjectResult($"Item updated successfully: {updateResponse.Resource.Id}");
             }
@@ -185,6 +234,25 @@ namespace FunctionTodoList
                 result.StatusCode = StatusCodes.Status500InternalServerError;
                 return result;
             }
+        }
+
+        private async Task SendDataToEventGrid(TodoItem todoItemData, string subject)
+        {
+            var eventType = "Model.Reminder";
+
+            var eventData = new EventGridEvent()
+            {
+                Id = todoItemData.Id,
+                Data = JsonConvert.SerializeObject(todoItemData),
+                DataVersion = "1.0",
+                EventType = eventType,
+                Subject = subject,
+            };
+
+            var topicHostname = new Uri(ENDPOINT).Host;
+            TopicCredentials topicCredentials = new TopicCredentials(KEY);
+            var theEVGClient = new EventGridClient(topicCredentials);
+            await theEVGClient.PublishEventsAsync(topicHostname, new List<EventGridEvent> { eventData });
         }
     }
 }
